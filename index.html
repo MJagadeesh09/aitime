@@ -11,7 +11,7 @@
         :root {
             --primary-color: #0d9488; /* Teal */
             --primary-hover: #0f766e;
-            --secondary-color: #f0fdfa;
+            --secondary-color: #f0dfa;
             --text-primary: #111827;
             --text-secondary: #4b5563;
         }
@@ -72,31 +72,10 @@
             font-size: 0.8rem;
             min-height: 60px;
         }
-        .chat-bubble-user {
-            background-color: var(--primary-color);
-            color: white;
-            border-radius: 1rem 1rem 0.25rem 1rem;
-            align-self: flex-end;
-        }
-        .chat-bubble-bot {
-            background-color: #e5e7eb;
-            color: var(--text-primary);
-            border-radius: 1rem 1rem 1rem 0.25rem;
-            align-self: flex-start;
-        }
-        .typing-indicator span {
-            height: 8px;
-            width: 8px;
-            background-color: #9ca3af;
-            border-radius: 50%;
-            display: inline-block;
-            animation: bounce 1.4s infinite ease-in-out both;
-        }
-        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
-        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
-        @keyframes bounce {
-            0%, 80%, 100% { transform: scale(0); }
-            40% { transform: scale(1.0); }
+        .timetable-slot.faded {
+            background-color: #f0f2f5;
+            border-color: #e2e8f0;
+            color: #9ca3af;
         }
     </style>
 </head>
@@ -153,6 +132,11 @@
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
+                    <div id="return-to-admin-container" class="hidden">
+                        <button id="return-to-admin-btn" class="btn bg-yellow-100 text-yellow-800 hover:bg-yellow-200">
+                            <i data-lucide="shield" class="mr-2 h-5 w-5"></i>Return to Admin View
+                        </button>
+                    </div>
                     <div class="text-right">
                         <p class="text-sm font-semibold text-gray-700" id="user-email"></p>
                         <p class="text-xs text-gray-500" id="user-role"></p>
@@ -193,56 +177,88 @@
                 </div>
                 <div id="generate-page" class="hidden">
                     <h1 class="text-3xl font-bold mb-4">Generate New Timetable</h1>
-                    <div class="card p-6">
-                        <h2 class="text-lg font-semibold mb-2">1. Add Subjects</h2>
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                            <input id="subject-name" type="text" placeholder="Subject Name" class="border p-2 rounded-md w-full">
-                            <input id="faculty-name" type="text" placeholder="Faculty Name" class="border p-2 rounded-md w-full">
-                            <input id="subject-hours" type="number" placeholder="Hours/Week" class="border p-2 rounded-md w-full">
-                            <input id="room-number" type="text" placeholder="Room No." class="border p-2 rounded-md w-full">
+                    <div class="space-y-6">
+                        <div class="card p-6">
+                            <h2 class="text-lg font-semibold mb-2">1. Add Subjects, Faculty, and Rooms</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                                <input id="subject-name" type="text" placeholder="Subject Name" class="border p-2 rounded-md w-full">
+                                <input id="faculty-name" type="text" placeholder="Faculty Name" class="border p-2 rounded-md w-full">
+                                <input id="subject-hours" type="number" placeholder="Hours/Week" class="border p-2 rounded-md w-full">
+                                <input id="room-number" type="text" placeholder="Room No." class="border p-2 rounded-md w-full">
+                            </div>
+                            <button id="add-subject-btn" class="btn btn-primary">Add Subject</button>
+                            <div class="mt-6">
+                                <h3 class="font-semibold">Subject List:</h3>
+                                <ul id="subject-list" class="space-y-2 mt-2"></ul>
+                            </div>
                         </div>
-                        <button id="add-subject-btn" class="btn btn-primary">Add Subject</button>
-                        <div class="mt-6">
-                            <h3 class="font-semibold">Subject List:</h3>
-                            <ul id="subject-list" class="space-y-2 mt-2"></ul>
+                        <div class="card p-6">
+                            <h2 class="text-lg font-semibold mb-2">2. Add Students & Enrollments</h2>
+                            <div class="flex items-end space-x-2 mb-4">
+                                <input id="student-name" type="text" placeholder="Student Name" class="border p-2 rounded-md w-full">
+                                <button id="add-student-btn" class="btn btn-primary">Add Student</button>
+                            </div>
+                            <div class="mt-6">
+                                <h3 class="font-semibold">Student List:</h3>
+                                <ul id="student-list" class="space-y-2 mt-2"></ul>
+                            </div>
+                        </div>
+                        <div class="card p-6 text-center">
+                            <h2 class="text-lg font-semibold mb-2">3. Generate Schedule</h2>
+                            <div id="generate-start">
+                                <button id="start-generation-btn" class="btn btn-primary w-full md:w-auto" disabled>
+                                    <i data-lucide="play" class="mr-2 h-5 w-5"></i>Generate Timetable
+                                </button>
+                                <p id="generation-warning" class="text-xs text-red-500 mt-2">Please add at least one subject and one student.</p>
+                            </div>
+                            <div id="generate-progress" class="hidden w-full max-w-sm mx-auto">
+                                <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-teal-600 mx-auto"></div>
+                                <p id="progress-text" class="text-gray-500 mt-2">Initializing constraints...</p>
+                            </div>
+                            <div id="generate-complete" class="hidden">
+                                <i data-lucide="check-circle-2" class="h-12 w-12 text-green-500 mx-auto"></i>
+                                <h3 class="text-xl font-semibold mt-2">Generation Complete!</h3>
+                                <p class="text-gray-500">An optimized, conflict-free timetable has been generated.</p>
+                                <button class="btn btn-primary mt-4" data-page-link="view">
+                                    <i data-lucide="eye" class="mr-2 h-5 w-5"></i>View Timetable
+                                </button>
+                            </div>
                         </div>
                     </div>
-                     <div class="card p-6 mt-6 text-center">
-                        <h2 class="text-lg font-semibold mb-2">2. Generate Schedule</h2>
-                        <div id="generate-start">
-                            <button id="start-generation-btn" class="btn btn-primary w-full md:w-auto" disabled>
-                                <i data-lucide="play" class="mr-2 h-5 w-5"></i>Generate Timetable
-                            </button>
-                            <p id="generation-warning" class="text-xs text-red-500 mt-2">Please add at least one subject.</p>
-                        </div>
-                        <div id="generate-progress" class="hidden w-full max-w-sm mx-auto">
-                            <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-teal-600 mx-auto"></div>
-                            <p id="progress-text" class="text-gray-500 mt-2">Initializing constraints...</p>
-                        </div>
-                        <div id="generate-complete" class="hidden">
-                            <i data-lucide="check-circle-2" class="h-12 w-12 text-green-500 mx-auto"></i>
-                            <h3 class="text-xl font-semibold mt-2">Generation Complete!</h3>
-                            <p class="text-gray-500">An optimized, conflict-free timetable has been generated.</p>
-                            <button class="btn btn-primary mt-4" data-page-link="view">
-                                <i data-lucide="eye" class="mr-2 h-5 w-5"></i>View Timetable
-                            </button>
-                        </div>
-                     </div>
                 </div>
                 <div id="view-page" class="hidden">
-                    <div class="flex justify-between items-center mb-6"><div><h1 class="text-3xl font-bold">Generated Timetable</h1><p class="text-gray-600">FYUP - B.Ed. Semester 1 (2025-26)</p></div><button class="btn btn-primary"><i data-lucide="download" class="mr-2 h-5 w-5"></i>Export (PDF/Excel)</button></div>
+                    <div id="admin-tools-panel" class="hidden card p-4 mb-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div id="admin-view-filter">
+                                <h3 class="font-semibold mb-2 text-gray-700">Filter Timetable View</h3>
+                                <div class="flex items-center space-x-4">
+                                   <select id="faculty-filter" class="border p-2 rounded-md w-full"><option value="">-- View by Faculty --</option></select>
+                                   <select id="student-filter" class="border p-2 rounded-md w-full"><option value="">-- View by Student --</option></select>
+                                   <button id="reset-view-btn" class="btn bg-gray-200 text-gray-700">Master View</button>
+                                </div>
+                            </div>
+                            <div id="admin-impersonation">
+                                <h3 class="font-semibold mb-2 text-gray-700">Impersonate Role</h3>
+                                <div class="flex items-center space-x-4">
+                                    <button id="view-as-teacher-btn" class="btn bg-blue-100 text-blue-700 w-full">View as Teacher</button>
+                                    <button id="view-as-student-btn" class="btn bg-blue-100 text-blue-700 w-full">View as Student</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center mb-6"><div><h1 id="timetable-title" class="text-3xl font-bold">Generated Timetable</h1><p class="text-gray-600">FYUP - B.Ed. Semester 1 (2025-26)</p></div><button class="btn btn-primary"><i data-lucide="download" class="mr-2 h-5 w-5"></i>Export (PDF/Excel)</button></div>
                     <div id="timetable-output" class="card p-6 overflow-x-auto"></div>
                 </div>
             </main>
             
-            <button id="ai-assistant-btn" class="fixed bottom-8 right-8 btn btn-primary !rounded-full !p-4 shadow-lg z-20"><i data-lucide="sparkles" class="h-6 w-6"></i></button>
-            <div id="ai-chat-window" class="hidden fixed bottom-24 right-8 w-96 card shadow-2xl z-10">
-                <div class="flex items-center justify-between p-4 bg-teal-50 border-b border-teal-200 rounded-t-lg">
-                    <div class="flex items-center space-x-2"><i data-lucide="sparkles" class="h-6 w-6 text-teal-600"></i><h3 class="font-semibold text-teal-800">AI Assistant</h3></div>
-                    <button id="close-chat-btn" class="text-gray-500 hover:text-gray-800"><i data-lucide="x" class="h-5 w-5"></i></button>
+            <div id="enrollment-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-30">
+                 <div class="card w-full max-w-lg">
+                    <div class="flex items-center justify-between p-4 border-b">
+                        <h3 id="enrollment-modal-title" class="text-xl font-semibold"></h3>
+                        <button id="close-enrollment-modal-btn" class="text-gray-500 hover:text-gray-800"><i data-lucide="x" class="h-6 w-6"></i></button>
+                    </div>
+                    <div id="enrollment-modal-body" class="p-6 space-y-2"></div>
                 </div>
-                <div id="chat-messages" class="p-4 h-80 overflow-y-auto flex flex-col space-y-4"></div>
-                <div class="p-4 border-t flex space-x-2"><input type="text" id="chat-input" placeholder="Ask a question..." class="flex-grow p-2 border rounded-md focus:ring-2 focus:ring-teal-500 focus:outline-none"><button id="chat-send-btn" class="btn btn-primary !p-2"><i data-lucide="send" class="h-5 w-5"></i></button></div>
             </div>
         </div>
     </div>
@@ -251,14 +267,18 @@
             const app = {
                 currentUser: null,
                 selectedRole: null,
+                impersonatingRole: null,
                 subjects: [],
+                students: [],
+                generatedTimetable: null,
 
                 init() {
                     lucide.createIcons();
                     this.setupAuth();
                     this.setupNavigation();
                     this.setupGeneratorPage();
-                    this.setupAIAssistant();
+                    this.setupViewFilters();
+                    this.setupImpersonation();
                 },
 
                 showPage(pageId) {
@@ -319,8 +339,12 @@
                     logoutBtn.addEventListener('click', () => {
                         this.currentUser = null;
                         this.selectedRole = null;
+                        this.impersonatingRole = null;
                         this.subjects = [];
+                        this.students = [];
+                        this.generatedTimetable = null;
                         this.renderSubjectList();
+                        this.renderStudentList();
                         mainAppContainer.classList.add('hidden');
                         loginContainer.classList.remove('hidden');
                         loginFormView.classList.add('hidden');
@@ -330,22 +354,35 @@
 
                 updateUIAfterLogin() {
                     if (!this.currentUser) return;
+                    const displayRole = this.impersonatingRole || this.currentUser.role;
+                    
                     document.getElementById('user-email').textContent = this.currentUser.email;
-                    document.getElementById('user-role').textContent = this.currentUser.role;
+                    document.getElementById('user-role').textContent = this.impersonatingRole ? `${this.currentUser.role} (Viewing as ${this.impersonatingRole})` : this.currentUser.role;
+                    
                     const navItems = {
                         dashboard: document.querySelector('[data-page="dashboard"]'),
                         generate: document.querySelector('[data-page="generate"]'),
                         view: document.querySelector('[data-page="view"]'),
                     };
-                    Object.values(navItems).forEach(item => item.classList.add('hidden'));
-                    switch (this.currentUser.role) {
+                    Object.values(navItems).forEach(item => item.style.display = 'none');
+                    
+                    document.getElementById('admin-tools-panel').classList.toggle('hidden', this.currentUser.role !== 'Admin' || this.impersonatingRole !== null);
+                    document.getElementById('return-to-admin-container').classList.toggle('hidden', !this.impersonatingRole);
+
+                    switch (displayRole) {
                         case 'Admin':
-                            Object.values(navItems).forEach(item => item.classList.remove('hidden'));
-                            this.showPage('dashboard');
+                            Object.values(navItems).forEach(item => item.style.display = 'flex');
+                            if (!this.impersonatingRole) this.showPage('dashboard');
+                            else this.showPage('view');
                             break;
                         case 'Teacher':
+                            navItems.view.style.display = 'flex';
+                            this.displayTimetable(this.generatedTimetable, { type: 'faculty', name: this.subjects[0]?.faculty || 'teacher@college.edu' }); 
+                            this.showPage('view');
+                            break;
                         case 'Student':
-                            navItems.view.classList.remove('hidden');
+                            navItems.view.style.display = 'flex';
+                            this.displayTimetable(this.generatedTimetable, { type: 'student', name: this.students[0]?.name || 'student@college.edu' });
                             this.showPage('view');
                             break;
                     }
@@ -359,7 +396,11 @@
 
                 setupGeneratorPage() {
                     document.getElementById('add-subject-btn').addEventListener('click', () => this.addSubject());
+                    document.getElementById('add-student-btn').addEventListener('click', () => this.addStudent());
                     document.getElementById('start-generation-btn').addEventListener('click', () => this.startGeneration());
+                    document.getElementById('close-enrollment-modal-btn').addEventListener('click', () => {
+                        document.getElementById('enrollment-modal').classList.add('hidden');
+                    });
                 },
                 
                 addSubject() {
@@ -368,18 +409,11 @@
                     const hours = parseInt(document.getElementById('subject-hours').value, 10);
                     const room = document.getElementById('room-number').value.trim();
 
-                    if (!name || !faculty || !hours || !room) {
-                        alert('Please fill in all fields.'); return;
-                    }
-                    if (this.subjects.some(sub => sub.name.toLowerCase() === name.toLowerCase())) {
-                        alert('Subject already added!'); return;
-                    }
-                    this.subjects.push({ name, faculty, hours, room });
+                    if (!name || !faculty || !hours || !room) { alert('Please fill in all fields.'); return; }
+                    if (this.subjects.some(sub => sub.name.toLowerCase() === name.toLowerCase())) { alert('Subject already added!'); return; }
+                    this.subjects.push({ name, faculty, hours, room, students: [] });
                     this.renderSubjectList();
-                    document.getElementById('subject-name').value = '';
-                    document.getElementById('faculty-name').value = '';
-                    document.getElementById('subject-hours').value = '';
-                    document.getElementById('room-number').value = '';
+                    ['subject-name', 'faculty-name', 'subject-hours', 'room-number'].forEach(id => document.getElementById(id).value = '');
                 },
 
                 renderSubjectList() {
@@ -401,8 +435,67 @@
                     this.renderSubjectList();
                 },
 
+                addStudent() {
+                    const name = document.getElementById('student-name').value.trim();
+                    if(!name) { alert("Please enter a student name."); return; }
+                    if(this.students.some(s => s.name.toLowerCase() === name.toLowerCase())) { alert("Student already exists."); return; }
+                    this.students.push({ name, enrollments: [] });
+                    this.renderStudentList();
+                    document.getElementById('student-name').value = '';
+                },
+
+                renderStudentList() {
+                    const list = document.getElementById('student-list');
+                    list.innerHTML = '';
+                    this.students.forEach((student, index) => {
+                        const li = document.createElement('li');
+                        li.className = "p-2 border rounded-md flex justify-between items-center";
+                        li.innerHTML = `<span>${student.name} (${student.enrollments.length} courses)</span><div class="space-x-2"><button data-index="${index}" class="enroll-student-btn text-blue-500 hover:text-blue-700">Manage Enrollments</button><button data-index="${index}" class="remove-student-btn text-red-500 hover:text-red-700"><i data-lucide="trash-2" class="h-4 w-4"></i></button></div>`;
+                        list.appendChild(li);
+                    });
+                    lucide.createIcons();
+                    document.querySelectorAll('.remove-student-btn').forEach(btn => btn.addEventListener('click', (e) => this.removeStudent(e.currentTarget.dataset.index)));
+                    document.querySelectorAll('.enroll-student-btn').forEach(btn => btn.addEventListener('click', (e) => this.openEnrollmentModal(e.currentTarget.dataset.index)));
+                    this.checkGenerationReadiness();
+                },
+
+                removeStudent(index) {
+                    this.students.splice(index, 1);
+                    this.renderStudentList();
+                },
+
+                openEnrollmentModal(studentIndex) {
+                    const student = this.students[studentIndex];
+                    document.getElementById('enrollment-modal-title').textContent = `Enroll ${student.name} in Courses`;
+                    const body = document.getElementById('enrollment-modal-body');
+                    body.innerHTML = '';
+                    this.subjects.forEach(subject => {
+                        const isEnrolled = student.enrollments.includes(subject.name);
+                        body.innerHTML += `
+                            <label class="flex items-center space-x-2 p-2 rounded hover:bg-gray-100">
+                                <input type="checkbox" data-student-index="${studentIndex}" data-subject-name="${subject.name}" class="enrollment-checkbox h-4 w-4" ${isEnrolled ? 'checked' : ''}>
+                                <span>${subject.name}</span>
+                            </label>
+                        `;
+                    });
+                    document.getElementById('enrollment-modal').classList.remove('hidden');
+                    document.querySelectorAll('.enrollment-checkbox').forEach(box => box.addEventListener('change', (e) => {
+                        this.updateEnrollment(e.target.dataset.studentIndex, e.target.dataset.subjectName, e.target.checked);
+                    }));
+                },
+                
+                updateEnrollment(studentIndex, subjectName, isEnrolled) {
+                    const student = this.students[studentIndex];
+                    if (isEnrolled) {
+                        if (!student.enrollments.includes(subjectName)) student.enrollments.push(subjectName);
+                    } else {
+                        student.enrollments = student.enrollments.filter(s => s !== subjectName);
+                    }
+                    this.renderStudentList();
+                },
+
                 checkGenerationReadiness() {
-                    const ready = this.subjects.length > 0;
+                    const ready = this.subjects.length > 0 && this.students.length > 0;
                     document.getElementById('start-generation-btn').disabled = !ready;
                     document.getElementById('generation-warning').classList.toggle('hidden', ready);
                 },
@@ -419,13 +512,17 @@
                 },
 
                 runGeneratorAlgorithm() {
+                    // ... same algorithm as before
                     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
                     const slots = ['9-10 AM', '10-11 AM', '11-12 PM', '1-2 PM', '2-3 PM', "3-4 PM"];
                     let timetable = {}; days.forEach(day => { timetable[day] = {}; slots.forEach(slot => timetable[day][slot] = null); });
                     let facultySchedule = {}; let roomSchedule = {};
                     const classesToSchedule = [];
                     this.subjects.forEach(sub => {
-                        for(let i=0; i < sub.hours; i++) classesToSchedule.push(sub);
+                        for(let i=0; i < sub.hours; i++) {
+                            const enrolledStudents = this.students.filter(s => s.enrollments.includes(sub.name)).map(s => s.name);
+                            classesToSchedule.push({...sub, students: enrolledStudents });
+                        }
                         if (!facultySchedule[sub.faculty]) facultySchedule[sub.faculty] = {};
                         if (!roomSchedule[sub.room]) roomSchedule[sub.room] = {};
                     });
@@ -445,13 +542,21 @@
                             } if (placed) break;
                         }
                     }
-                    this.displayTimetable(timetable, days, slots);
+                    this.generatedTimetable = timetable;
+                    this.populateFilters();
+                    this.displayTimetable(timetable);
                 },
 
-                displayTimetable(timetable, days, slots) {
+                displayTimetable(timetable, filter = null) {
+                    if (!timetable) {
+                        document.getElementById('timetable-output').innerHTML = `<p class="text-center text-gray-500">No timetable has been generated yet.</p>`;
+                        return;
+                    }
+
                     const output = document.getElementById('timetable-output');
-                    output.innerHTML = '';
+                    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
                     const slotHeadersWithLunch = ['9-10 AM', '10-11 AM', '11-12 PM', '12-1 PM', '1-2 PM', '2-3 PM', "3-4 PM"];
+                    output.innerHTML = '';
                     let header = `<div class="grid grid-cols-8 gap-2 text-center font-semibold mb-2"><div></div>`;
                     slotHeadersWithLunch.forEach(slot => header += `<div>${slot}</div>`);
                     header += '</div>';
@@ -462,11 +567,20 @@
                         slotHeadersWithLunch.forEach(slot => {
                             if (slot === '12-1 PM') { 
                                 row += `<div class="bg-gray-100 p-2 rounded-md flex items-center justify-center text-gray-400">LUNCH</div>`;
-                            } else if (timetable[day][slot]) {
-                                const { name, faculty, room } = timetable[day][slot];
-                                row += `<div class="timetable-slot">${name}<br><small>${faculty} (${room})</small></div>`;
                             } else {
-                                row += `<div class="timetable-slot bg-gray-50 border-gray-200"></div>`;
+                                const cellData = timetable[day][slot];
+                                let isVisible = !filter;
+                                if(filter && cellData) {
+                                    if(filter.type === 'faculty' && cellData.faculty === filter.name) isVisible = true;
+                                    if(filter.type === 'student' && cellData.students.includes(filter.name)) isVisible = true;
+                                }
+
+                                if (cellData && isVisible) {
+                                    const { name, faculty, room } = cellData;
+                                    row += `<div class="timetable-slot">${name}<br><small>${faculty} (${room})</small></div>`;
+                                } else {
+                                    row += `<div class="timetable-slot bg-gray-50 border-gray-200 ${filter ? 'faded' : ''}"></div>`;
+                                }
                             }
                         });
                         row += '</div>';
@@ -474,67 +588,67 @@
                     });
                 },
 
-                setupAIAssistant() {
-                    const assistantBtn = document.getElementById('ai-assistant-btn');
-                    const chatWindow = document.getElementById('ai-chat-window');
-                    const closeChatBtn = document.getElementById('close-chat-btn');
-                    const chatInput = document.getElementById('chat-input');
-                    const chatSendBtn = document.getElementById('chat-send-btn');
-                    assistantBtn.addEventListener('click', () => {
-                        chatWindow.classList.toggle('hidden');
-                        if (!chatWindow.classList.contains('hidden') && document.getElementById('chat-messages').children.length === 0) {
-                            this.addChatMessage("Hello! How can I help you with the timetable today?", 'bot');
-                        }
+                populateFilters() {
+                    const facultyFilter = document.getElementById('faculty-filter');
+                    const studentFilter = document.getElementById('student-filter');
+                    facultyFilter.innerHTML = '<option value="">-- View by Faculty --</option>';
+                    studentFilter.innerHTML = '<option value="">-- View by Student --</option>';
+
+                    const uniqueFaculty = [...new Set(this.subjects.map(s => s.faculty))];
+                    uniqueFaculty.forEach(f => facultyFilter.innerHTML += `<option value="${f}">${f}</option>`);
+                    
+                    this.students.forEach(s => studentFilter.innerHTML += `<option value="${s.name}">${s.name}</option>`);
+                },
+
+                setupViewFilters() {
+                    const facultyFilter = document.getElementById('faculty-filter');
+                    const studentFilter = document.getElementById('student-filter');
+                    const resetBtn = document.getElementById('reset-view-btn');
+
+                    facultyFilter.addEventListener('change', () => {
+                        studentFilter.value = "";
+                        const name = facultyFilter.value;
+                        document.getElementById('timetable-title').textContent = name ? `${name}'s Timetable` : 'Master Timetable';
+                        this.displayTimetable(this.generatedTimetable, name ? { type: 'faculty', name } : null);
                     });
-                    closeChatBtn.addEventListener('click', () => chatWindow.classList.add('hidden'));
-                    const sendMessage = async () => {
-                        const message = chatInput.value.trim();
-                        if (message) {
-                            this.addChatMessage(message, 'user');
-                            chatInput.value = '';
-                            this.addChatMessage("...", 'bot', true);
-                            const response = await this.getAIResponse(message);
-                            this.updateLastBotMessage(response);
-                        }
-                    };
-                    chatSendBtn.addEventListener('click', sendMessage);
-                    chatInput.addEventListener('keypress', (e) => {
-                        if (e.key === 'Enter') sendMessage();
+                    
+                    studentFilter.addEventListener('change', () => {
+                        facultyFilter.value = "";
+                        const name = studentFilter.value;
+                        document.getElementById('timetable-title').textContent = name ? `${name}'s Timetable` : 'Master Timetable';
+                        this.displayTimetable(this.generatedTimetable, name ? { type: 'student', name } : null);
+                    });
+
+                    resetBtn.addEventListener('click', () => {
+                        facultyFilter.value = "";
+                        studentFilter.value = "";
+                        document.getElementById('timetable-title').textContent = 'Generated Timetable';
+                        this.displayTimetable(this.generatedTimetable, null);
                     });
                 },
-
-                addChatMessage(message, sender, isTyping = false) {
-                    const chatMessages = document.getElementById('chat-messages');
-                    const messageElement = document.createElement('div');
-                    if (isTyping) {
-                        messageElement.className = 'chat-bubble-bot p-3 typing-indicator';
-                        messageElement.innerHTML = '<span></span><span></span><span></span>';
-                        messageElement.dataset.typing = 'true';
-                    } else {
-                        messageElement.className = `p-3 max-w-xs md:max-w-md break-words ${sender === 'user' ? 'chat-bubble-user' : 'chat-bubble-bot'}`;
-                        messageElement.textContent = message;
-                    }
-                    chatMessages.appendChild(messageElement);
-                    chatMessages.scrollTop = chatMessages.scrollHeight;
-                },
-
-                updateLastBotMessage(newMessage) {
-                    const typingIndicator = document.querySelector('[data-typing="true"]');
-                    if (typingIndicator) {
-                        typingIndicator.className = 'p-3 max-w-xs md:max-w-md break-words chat-bubble-bot';
-                        typingIndicator.textContent = newMessage;
-                        typingIndicator.removeAttribute('data-typing');
-                    }
-                },
-
-                async callGeminiAPI(prompt) { /* ... same as before ... */ },
-                async getAIResponse(userInput) { /* ... same as before ... */ },
+                
+                setupImpersonation() {
+                    document.getElementById('view-as-teacher-btn').addEventListener('click', () => {
+                        this.impersonatingRole = 'Teacher';
+                        this.updateUIAfterLogin();
+                    });
+                     document.getElementById('view-as-student-btn').addEventListener('click', () => {
+                        this.impersonatingRole = 'Student';
+                        this.updateUIAfterLogin();
+                    });
+                     document.getElementById('return-to-admin-btn').addEventListener('click', () => {
+                        this.impersonatingRole = null;
+                        this.updateUIAfterLogin();
+                        this.showPage('view');
+                    });
+                }
             };
             app.init();
         });
     </script>
 </body>
 </html>
+
 
 
 
