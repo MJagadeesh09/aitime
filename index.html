@@ -192,24 +192,13 @@
                                 <ul id="subject-list" class="space-y-2 mt-2"></ul>
                             </div>
                         </div>
-                        <div class="card p-6">
-                            <h2 class="text-lg font-semibold mb-2">2. Add Students & Enrollments</h2>
-                            <div class="flex items-end space-x-2 mb-4">
-                                <input id="student-name" type="text" placeholder="Student Name" class="border p-2 rounded-md w-full">
-                                <button id="add-student-btn" class="btn btn-primary">Add Student</button>
-                            </div>
-                            <div class="mt-6">
-                                <h3 class="font-semibold">Student List:</h3>
-                                <ul id="student-list" class="space-y-2 mt-2"></ul>
-                            </div>
-                        </div>
                         <div class="card p-6 text-center">
-                            <h2 class="text-lg font-semibold mb-2">3. Generate Schedule</h2>
+                            <h2 class="text-lg font-semibold mb-2">2. Generate Schedule</h2>
                             <div id="generate-start">
                                 <button id="start-generation-btn" class="btn btn-primary w-full md:w-auto" disabled>
                                     <i data-lucide="play" class="mr-2 h-5 w-5"></i>Generate Timetable
                                 </button>
-                                <p id="generation-warning" class="text-xs text-red-500 mt-2">Please add at least one subject and one student.</p>
+                                <p id="generation-warning" class="text-xs text-red-500 mt-2">Please add at least one subject.</p>
                             </div>
                             <div id="generate-progress" class="hidden w-full max-w-sm mx-auto">
                                 <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-teal-600 mx-auto"></div>
@@ -233,7 +222,6 @@
                                 <h3 class="font-semibold mb-2 text-gray-700">Filter Timetable View</h3>
                                 <div class="flex items-center space-x-4">
                                    <select id="faculty-filter" class="border p-2 rounded-md w-full"><option value="">-- View by Faculty --</option></select>
-                                   <select id="student-filter" class="border p-2 rounded-md w-full"><option value="">-- View by Student --</option></select>
                                    <button id="reset-view-btn" class="btn bg-gray-200 text-gray-700">Master View</button>
                                 </div>
                             </div>
@@ -250,16 +238,6 @@
                     <div id="timetable-output" class="card p-6 overflow-x-auto"></div>
                 </div>
             </main>
-            
-            <div id="enrollment-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-30">
-                 <div class="card w-full max-w-lg">
-                    <div class="flex items-center justify-between p-4 border-b">
-                        <h3 id="enrollment-modal-title" class="text-xl font-semibold"></h3>
-                        <button id="close-enrollment-modal-btn" class="text-gray-500 hover:text-gray-800"><i data-lucide="x" class="h-6 w-6"></i></button>
-                    </div>
-                    <div id="enrollment-modal-body" class="p-6 space-y-2"></div>
-                </div>
-            </div>
         </div>
     </div>
     <script>
@@ -269,7 +247,6 @@
                 selectedRole: null,
                 impersonatingRole: null,
                 subjects: [],
-                students: [],
                 generatedTimetable: null,
 
                 init() {
@@ -341,10 +318,8 @@
                         this.selectedRole = null;
                         this.impersonatingRole = null;
                         this.subjects = [];
-                        this.students = [];
                         this.generatedTimetable = null;
                         this.renderSubjectList();
-                        this.renderStudentList();
                         mainAppContainer.classList.add('hidden');
                         loginContainer.classList.remove('hidden');
                         loginFormView.classList.add('hidden');
@@ -377,12 +352,12 @@
                             break;
                         case 'Teacher':
                             navItems.view.style.display = 'flex';
-                            this.displayTimetable(this.generatedTimetable, { type: 'faculty', name: this.subjects[0]?.faculty || 'teacher@college.edu' }); 
+                            this.displayTimetable(this.generatedTimetable, { type: 'faculty', name: 'teacher@college.edu' }); 
                             this.showPage('view');
                             break;
                         case 'Student':
                             navItems.view.style.display = 'flex';
-                            this.displayTimetable(this.generatedTimetable, { type: 'student', name: this.students[0]?.name || 'student@college.edu' });
+                            this.displayTimetable(this.generatedTimetable, null); // Students see the master timetable in this simplified version
                             this.showPage('view');
                             break;
                     }
@@ -396,11 +371,7 @@
 
                 setupGeneratorPage() {
                     document.getElementById('add-subject-btn').addEventListener('click', () => this.addSubject());
-                    document.getElementById('add-student-btn').addEventListener('click', () => this.addStudent());
                     document.getElementById('start-generation-btn').addEventListener('click', () => this.startGeneration());
-                    document.getElementById('close-enrollment-modal-btn').addEventListener('click', () => {
-                        document.getElementById('enrollment-modal').classList.add('hidden');
-                    });
                 },
                 
                 addSubject() {
@@ -411,7 +382,7 @@
 
                     if (!name || !faculty || !hours || !room) { alert('Please fill in all fields.'); return; }
                     if (this.subjects.some(sub => sub.name.toLowerCase() === name.toLowerCase())) { alert('Subject already added!'); return; }
-                    this.subjects.push({ name, faculty, hours, room, students: [] });
+                    this.subjects.push({ name, faculty, hours, room });
                     this.renderSubjectList();
                     ['subject-name', 'faculty-name', 'subject-hours', 'room-number'].forEach(id => document.getElementById(id).value = '');
                 },
@@ -435,67 +406,8 @@
                     this.renderSubjectList();
                 },
 
-                addStudent() {
-                    const name = document.getElementById('student-name').value.trim();
-                    if(!name) { alert("Please enter a student name."); return; }
-                    if(this.students.some(s => s.name.toLowerCase() === name.toLowerCase())) { alert("Student already exists."); return; }
-                    this.students.push({ name, enrollments: [] });
-                    this.renderStudentList();
-                    document.getElementById('student-name').value = '';
-                },
-
-                renderStudentList() {
-                    const list = document.getElementById('student-list');
-                    list.innerHTML = '';
-                    this.students.forEach((student, index) => {
-                        const li = document.createElement('li');
-                        li.className = "p-2 border rounded-md flex justify-between items-center";
-                        li.innerHTML = `<span>${student.name} (${student.enrollments.length} courses)</span><div class="space-x-2"><button data-index="${index}" class="enroll-student-btn text-blue-500 hover:text-blue-700">Manage Enrollments</button><button data-index="${index}" class="remove-student-btn text-red-500 hover:text-red-700"><i data-lucide="trash-2" class="h-4 w-4"></i></button></div>`;
-                        list.appendChild(li);
-                    });
-                    lucide.createIcons();
-                    document.querySelectorAll('.remove-student-btn').forEach(btn => btn.addEventListener('click', (e) => this.removeStudent(e.currentTarget.dataset.index)));
-                    document.querySelectorAll('.enroll-student-btn').forEach(btn => btn.addEventListener('click', (e) => this.openEnrollmentModal(e.currentTarget.dataset.index)));
-                    this.checkGenerationReadiness();
-                },
-
-                removeStudent(index) {
-                    this.students.splice(index, 1);
-                    this.renderStudentList();
-                },
-
-                openEnrollmentModal(studentIndex) {
-                    const student = this.students[studentIndex];
-                    document.getElementById('enrollment-modal-title').textContent = `Enroll ${student.name} in Courses`;
-                    const body = document.getElementById('enrollment-modal-body');
-                    body.innerHTML = '';
-                    this.subjects.forEach(subject => {
-                        const isEnrolled = student.enrollments.includes(subject.name);
-                        body.innerHTML += `
-                            <label class="flex items-center space-x-2 p-2 rounded hover:bg-gray-100">
-                                <input type="checkbox" data-student-index="${studentIndex}" data-subject-name="${subject.name}" class="enrollment-checkbox h-4 w-4" ${isEnrolled ? 'checked' : ''}>
-                                <span>${subject.name}</span>
-                            </label>
-                        `;
-                    });
-                    document.getElementById('enrollment-modal').classList.remove('hidden');
-                    document.querySelectorAll('.enrollment-checkbox').forEach(box => box.addEventListener('change', (e) => {
-                        this.updateEnrollment(e.target.dataset.studentIndex, e.target.dataset.subjectName, e.target.checked);
-                    }));
-                },
-                
-                updateEnrollment(studentIndex, subjectName, isEnrolled) {
-                    const student = this.students[studentIndex];
-                    if (isEnrolled) {
-                        if (!student.enrollments.includes(subjectName)) student.enrollments.push(subjectName);
-                    } else {
-                        student.enrollments = student.enrollments.filter(s => s !== subjectName);
-                    }
-                    this.renderStudentList();
-                },
-
                 checkGenerationReadiness() {
-                    const ready = this.subjects.length > 0 && this.students.length > 0;
+                    const ready = this.subjects.length > 0;
                     document.getElementById('start-generation-btn').disabled = !ready;
                     document.getElementById('generation-warning').classList.toggle('hidden', ready);
                 },
@@ -512,17 +424,13 @@
                 },
 
                 runGeneratorAlgorithm() {
-                    // ... same algorithm as before
                     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
                     const slots = ['9-10 AM', '10-11 AM', '11-12 PM', '1-2 PM', '2-3 PM', "3-4 PM"];
                     let timetable = {}; days.forEach(day => { timetable[day] = {}; slots.forEach(slot => timetable[day][slot] = null); });
                     let facultySchedule = {}; let roomSchedule = {};
                     const classesToSchedule = [];
                     this.subjects.forEach(sub => {
-                        for(let i=0; i < sub.hours; i++) {
-                            const enrolledStudents = this.students.filter(s => s.enrollments.includes(sub.name)).map(s => s.name);
-                            classesToSchedule.push({...sub, students: enrolledStudents });
-                        }
+                        for(let i=0; i < sub.hours; i++) classesToSchedule.push(sub);
                         if (!facultySchedule[sub.faculty]) facultySchedule[sub.faculty] = {};
                         if (!roomSchedule[sub.room]) roomSchedule[sub.room] = {};
                     });
@@ -572,7 +480,6 @@
                                 let isVisible = !filter;
                                 if(filter && cellData) {
                                     if(filter.type === 'faculty' && cellData.faculty === filter.name) isVisible = true;
-                                    if(filter.type === 'student' && cellData.students.includes(filter.name)) isVisible = true;
                                 }
 
                                 if (cellData && isVisible) {
@@ -590,38 +497,23 @@
 
                 populateFilters() {
                     const facultyFilter = document.getElementById('faculty-filter');
-                    const studentFilter = document.getElementById('student-filter');
                     facultyFilter.innerHTML = '<option value="">-- View by Faculty --</option>';
-                    studentFilter.innerHTML = '<option value="">-- View by Student --</option>';
-
                     const uniqueFaculty = [...new Set(this.subjects.map(s => s.faculty))];
                     uniqueFaculty.forEach(f => facultyFilter.innerHTML += `<option value="${f}">${f}</option>`);
-                    
-                    this.students.forEach(s => studentFilter.innerHTML += `<option value="${s.name}">${s.name}</option>`);
                 },
 
                 setupViewFilters() {
                     const facultyFilter = document.getElementById('faculty-filter');
-                    const studentFilter = document.getElementById('student-filter');
                     const resetBtn = document.getElementById('reset-view-btn');
 
                     facultyFilter.addEventListener('change', () => {
-                        studentFilter.value = "";
                         const name = facultyFilter.value;
                         document.getElementById('timetable-title').textContent = name ? `${name}'s Timetable` : 'Master Timetable';
                         this.displayTimetable(this.generatedTimetable, name ? { type: 'faculty', name } : null);
                     });
                     
-                    studentFilter.addEventListener('change', () => {
-                        facultyFilter.value = "";
-                        const name = studentFilter.value;
-                        document.getElementById('timetable-title').textContent = name ? `${name}'s Timetable` : 'Master Timetable';
-                        this.displayTimetable(this.generatedTimetable, name ? { type: 'student', name } : null);
-                    });
-
                     resetBtn.addEventListener('click', () => {
                         facultyFilter.value = "";
-                        studentFilter.value = "";
                         document.getElementById('timetable-title').textContent = 'Generated Timetable';
                         this.displayTimetable(this.generatedTimetable, null);
                     });
