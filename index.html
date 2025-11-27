@@ -3,243 +3,540 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEP Timetable Navigator (Phase 1)</title>
+    <title>NEP Timetable Navigator | SIH 2024</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
-            --primary-color: #0d9488; /* Teal */
+            --primary-color: #0d9488;
             --primary-hover: #0f766e;
-            --secondary-color: #f0dfa;
-            --text-primary: #111827;
-            --text-secondary: #4b5563;
+            --bg-page: #f8fafc;
         }
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
-            color: var(--text-primary);
+            background-color: var(--bg-page);
+            color: #1e293b;
         }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+        .delay-100 { animation-delay: 0.1s; }
+        .delay-200 { animation-delay: 0.2s; }
+
+        /* Custom Components */
         .btn {
-            padding: 0.6rem 1.2rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            transition: all 0.2s ease-in-out;
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            padding: 0.625rem 1.25rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        .btn:active { transform: scale(0.98); }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+            color: white;
             border: 1px solid transparent;
         }
-        .btn-primary {
-            background-color: var(--primary-color);
-            color: white;
-        }
         .btn-primary:hover {
-            background-color: var(--primary-hover);
+            box-shadow: 0 4px 6px -1px rgba(13, 148, 136, 0.3);
+            filter: brightness(1.1);
         }
+        .btn-secondary {
+            background-color: white;
+            color: #334155;
+            border: 1px solid #e2e8f0;
+        }
+        .btn-secondary:hover {
+            background-color: #f8fafc;
+            border-color: #cbd5e1;
+        }
+
         .card {
             background-color: white;
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
+            border-radius: 1rem;
+            border: 1px solid #f1f5f9;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            transition: box-shadow 0.2s;
         }
-        .hidden { display: none; }
+        .card:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 0.625rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid #e2e8f0;
+            background-color: #f8fafc;
+            transition: all 0.2s;
+            outline: none;
+        }
+        .input-field:focus {
+            background-color: white;
+            border-color: #0d9488;
+            box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+        }
+
         .nav-item {
             display: flex;
             align-items: center;
             padding: 0.75rem 1rem;
+            margin-bottom: 0.25rem;
             border-radius: 0.5rem;
+            color: #64748b;
             font-weight: 500;
-            cursor: pointer;
-            color: var(--text-secondary);
             transition: all 0.2s;
-            border-left: 4px solid transparent;
+            cursor: pointer;
         }
         .nav-item:hover {
-            background-color: var(--secondary-color);
-            color: var(--primary-color);
+            background-color: #f1f5f9;
+            color: #0f172a;
         }
         .nav-item.active {
-            background-color: var(--secondary-color);
-            color: var(--primary-color);
-            border-left-color: var(--primary-color);
+            background-color: #f0fdfa;
+            color: #0d9488;
         }
+
+        /* Timetable Grid specific */
         .timetable-slot {
-            background-color: #e0f2f1;
-            border: 1px solid #b2dfdb;
-            border-radius: 0.375rem;
-            padding: 0.5rem;
-            text-align: center;
-            font-size: 0.8rem;
-            min-height: 60px;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.85rem;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transition: transform 0.2s;
+            border-left: 4px solid transparent;
         }
-        .timetable-slot.faded {
-            background-color: #f0f2f5;
-            border-color: #e2e8f0;
-            color: #9ca3af;
+        .timetable-slot:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+        
+        /* Glass Effect for Login */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .subject-pill {
+            transition: all 0.2s;
+        }
+        .subject-pill:hover {
+            transform: translateX(4px);
         }
     </style>
 </head>
-<body class="bg-gray-50">
+<body class="h-screen overflow-hidden text-slate-800">
 
-    <!-- Login Page -->
-    <div id="login-container" class="flex items-center justify-center h-screen">
-        <div class="w-full max-w-md">
-            <div id="role-selection-view" class="card p-8">
-                <div class="flex flex-col items-center mb-6">
-                    <i data-lucide="calendar-check" class="h-12 w-12 text-teal-600 bg-teal-50 p-2 rounded-lg"></i>
-                    <h1 class="text-2xl font-bold text-gray-800 mt-4">NEP Timetable Navigator</h1>
-                    <p class="text-gray-500">First, please select your role.</p>
+    <!-- Login Container -->
+    <div id="login-container" class="relative flex items-center justify-center h-full w-full bg-gradient-to-br from-teal-600 to-slate-900">
+        <!-- Abstract Background Shapes -->
+        <div class="absolute top-0 left-0 w-full h-full overflow-hidden opacity-20 pointer-events-none">
+            <div class="absolute top-10 left-10 w-64 h-64 bg-white rounded-full mix-blend-overlay filter blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-10 right-10 w-96 h-96 bg-teal-300 rounded-full mix-blend-overlay filter blur-3xl animate-pulse" style="animation-duration: 4s;"></div>
+        </div>
+
+        <div class="w-full max-w-lg p-4 z-10 animate-fade-in">
+            <!-- Role Selection View -->
+            <div id="role-selection-view" class="glass-panel rounded-2xl shadow-2xl p-8 md:p-10 text-center">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-teal-50 rounded-2xl mb-6 shadow-inner text-teal-600">
+                    <i data-lucide="layers" class="h-8 w-8"></i>
                 </div>
+                <h1 class="text-3xl font-bold text-slate-800 mb-2">NEP Timetable Navigator</h1>
+                <p class="text-slate-500 mb-8">Intelligent Scheduling & Conflict Resolution System</p>
+                
                 <div class="space-y-3">
-                    <button data-role="Admin" class="role-btn w-full btn btn-primary">I am an Admin</button>
-                    <button data-role="Teacher" class="role-btn w-full btn btn-primary">I am a Teacher</button>
-                    <button data-role="Student" class="role-btn w-full btn btn-primary">I am a Student</button>
+                    <button data-role="Admin" class="role-btn w-full btn btn-primary py-3 text-lg shadow-lg shadow-teal-500/30">
+                        <i data-lucide="shield" class="mr-2 h-5 w-5"></i> Admin Access
+                    </button>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button data-role="Teacher" class="role-btn btn btn-secondary py-3">
+                            <i data-lucide="graduation-cap" class="mr-2 h-5 w-5"></i> Teacher
+                        </button>
+                        <button data-role="Student" class="role-btn btn btn-secondary py-3">
+                            <i data-lucide="users" class="mr-2 h-5 w-5"></i> Student
+                        </button>
+                    </div>
+                </div>
+                <div class="mt-6 pt-6 border-t border-slate-100">
+                    <p class="text-xs text-slate-400 font-medium tracking-wide">SMART INDIA HACKATHON 2025 PROTOTYPE</p>
                 </div>
             </div>
-            <div id="login-form-view" class="hidden card p-8 relative">
-                <div class="flex items-center mb-6">
-                    <button id="back-to-role-btn" class="text-gray-500 hover:text-gray-800 mr-4"><i data-lucide="arrow-left" class="h-6 w-6"></i></button>
-                    <h2 id="login-title" class="text-2xl font-bold text-gray-800">Login</h2>
+
+            <!-- Login Form View -->
+            <div id="login-form-view" class="hidden glass-panel rounded-2xl shadow-2xl p-8 md:p-10 relative">
+                <button id="back-to-role-btn" class="absolute top-6 left-6 text-slate-400 hover:text-slate-700 transition-colors p-1 rounded-full hover:bg-slate-100">
+                    <i data-lucide="arrow-left" class="h-6 w-6"></i>
+                </button>
+                
+                <div class="text-center mb-8 mt-2">
+                    <h2 id="login-title" class="text-2xl font-bold text-slate-800">Sign In</h2>
+                    <p class="text-slate-500 text-sm mt-1">Access your secure dashboard</p>
                 </div>
-                <form id="login-form">
-                    <div id="login-error" class="hidden mb-4 p-3 text-sm text-red-700 bg-red-100 rounded-md">Invalid credentials.</div>
-                    <div class="space-y-4">
-                        <div>
-                            <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-                            <input type="email" id="email" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
-                        </div>
-                        <div>
-                            <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
-                            <input type="password" id="password" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md" value="password">
-                        </div>
-                        <button type="submit" class="w-full btn btn-primary">Sign In</button>
+
+                <form id="login-form" class="space-y-5">
+                    <div id="login-error" class="hidden p-3 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg flex items-center">
+                        <i data-lucide="alert-circle" class="h-4 w-4 mr-2"></i> Invalid credentials
                     </div>
-                    <p class="text-xs text-center text-gray-500 mt-4">For this prototype, the password is 'password'.</p>
+                    
+                    <div class="space-y-1">
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Email Address</label>
+                        <div class="relative">
+                            <i data-lucide="mail" class="absolute left-3 top-3 h-5 w-5 text-slate-400"></i>
+                            <input type="email" id="email" class="input-field pl-10" placeholder="name@college.edu">
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-1">
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Password</label>
+                        <div class="relative">
+                            <i data-lucide="lock" class="absolute left-3 top-3 h-5 w-5 text-slate-400"></i>
+                            <input type="password" id="password" class="input-field pl-10" value="password">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full btn btn-primary py-3 mt-2">Sign In</button>
                 </form>
+                <p class="text-xs text-center text-slate-400 mt-6 bg-slate-50 p-2 rounded">Dev Note: Password is 'password'</p>
             </div>
         </div>
     </div>
 
-    <!-- Main Application Container -->
-    <div id="app" class="hidden h-screen flex-col">
-        <header class="bg-white border-b border-gray-200 flex-shrink-0">
-            <div class="flex items-center justify-between h-16 px-6">
+    <!-- Main App -->
+    <div id="app" class="hidden h-screen flex flex-col bg-slate-50">
+        <!-- Top Navigation -->
+        <header class="bg-white border-b border-slate-200 z-20 shadow-sm">
+            <div class="flex items-center justify-between h-16 px-6 max-w-7xl mx-auto w-full">
                 <div class="flex items-center space-x-3">
-                    <i data-lucide="calendar-check" class="h-8 w-8 text-teal-600"></i>
+                    <div class="bg-teal-600 text-white p-1.5 rounded-lg">
+                        <i data-lucide="calendar-clock" class="h-6 w-6"></i>
+                    </div>
                     <div>
-                        <h1 class="text-lg font-bold text-gray-800">Timetable Navigator</h1>
-                        <p class="text-xs text-gray-500">Phase 1: Basic Generator</p>
+                        <h1 class="text-lg font-bold text-slate-800 leading-tight">NEP Navigator</h1>
+                        <p class="text-[10px] text-slate-500 font-medium tracking-wider uppercase">Scheduling System v1.0</p>
                     </div>
                 </div>
+
                 <div class="flex items-center space-x-4">
-                    <div id="return-to-admin-container" class="hidden">
-                        <button id="return-to-admin-btn" class="btn bg-yellow-100 text-yellow-800 hover:bg-yellow-200">
-                            <i data-lucide="shield" class="mr-2 h-5 w-5"></i>Return to Admin View
+                    <div id="return-to-admin-container" class="hidden animate-fade-in">
+                        <button id="return-to-admin-btn" class="btn bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 py-1.5 text-xs">
+                            <i data-lucide="shield-alert" class="mr-2 h-4 w-4"></i> Stop Impersonating
                         </button>
                     </div>
-                    <div class="text-right">
-                        <p class="text-sm font-semibold text-gray-700" id="user-email"></p>
-                        <p class="text-xs text-gray-500" id="user-role"></p>
+                    
+                    <div class="flex items-center pl-4 border-l border-slate-200 space-x-3">
+                        <div class="text-right hidden sm:block">
+                            <p class="text-sm font-semibold text-slate-700" id="user-email">user@college.edu</p>
+                            <span class="text-[10px] bg-slate-100 text-slate-500 py-0.5 px-2 rounded-full uppercase font-bold tracking-wide" id="user-role">Admin</span>
+                        </div>
+                        <button id="logout-btn" class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                            <i data-lucide="log-out" class="h-5 w-5"></i>
+                        </button>
                     </div>
-                    <button id="logout-btn" class="btn bg-gray-100 text-gray-700 hover:bg-gray-200 !p-2"><i data-lucide="log-out" class="h-5 w-5"></i></button>
                 </div>
             </div>
         </header>
-        <div class="flex flex-grow overflow-hidden relative">
-            <aside class="w-64 bg-white p-4 flex-shrink-0 border-r border-gray-200 flex flex-col">
-                <nav class="flex flex-col space-y-2 flex-grow">
-                    <a class="nav-item" data-page="dashboard"><i data-lucide="layout-dashboard" class="mr-3 h-5 w-5"></i>Dashboard</a>
-                    <a class="nav-item" data-page="generate"><i data-lucide="cpu" class="mr-3 h-5 w-5"></i>Generate Timetable</a>
-                    <a class="nav-item" data-page="view"><i data-lucide="eye" class="mr-3 h-5 w-5"></i>View Timetable</a>
-                </nav>
+
+        <div class="flex flex-1 overflow-hidden max-w-7xl mx-auto w-full">
+            <!-- Sidebar -->
+            <aside class="w-64 bg-white hidden md:flex flex-col border-r border-slate-200 pt-6 pb-4">
+                <div class="px-4 mb-2">
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-2">Main Menu</p>
+                    <nav class="space-y-1">
+                        <a class="nav-item active" data-page="dashboard">
+                            <i data-lucide="layout-grid" class="mr-3 h-5 w-5"></i> Dashboard
+                        </a>
+                        <a class="nav-item" data-page="generate">
+                            <i data-lucide="wand-2" class="mr-3 h-5 w-5"></i> Generator
+                        </a>
+                        <a class="nav-item" data-page="view">
+                            <i data-lucide="calendar" class="mr-3 h-5 w-5"></i> View Timetable
+                        </a>
+                    </nav>
+                </div>
+                
+                <div class="mt-auto px-6 py-4 bg-slate-50 border-t border-slate-100 mx-4 rounded-xl mb-4">
+                    <h4 class="text-xs font-bold text-slate-700 mb-1">System Status</h4>
+                    <div class="flex items-center text-xs text-green-600">
+                        <span class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+                        Algorithm Ready
+                    </div>
+                </div>
             </aside>
-            <main class="flex-1 p-8 overflow-y-auto">
-                <div id="dashboard-page" class="hidden">
-                    <h1 class="text-3xl font-bold mb-2">Dashboard</h1>
-                    <p class="text-gray-600 mb-8">Overview of the timetable generation system.</p>
-                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="card p-6">
-                            <h3 class="font-semibold text-gray-700">Generation Status</h3>
-                            <p class="text-2xl font-bold text-green-600 mt-2">Completed</p>
-                            <p class="text-sm text-gray-500">Last run: 2 days ago</p>
+
+            <!-- Main Content Area -->
+            <main class="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
+                
+                <!-- Dashboard View -->
+                <div id="dashboard-page" class="animate-fade-in">
+                    <header class="mb-8">
+                        <h1 class="text-2xl md:text-3xl font-bold text-slate-800">Dashboard Overview</h1>
+                        <p class="text-slate-500 mt-1">Real-time metrics of your academic scheduling.</p>
+                    </header>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <!-- Stat Card 1 -->
+                        <div class="card p-6 border-l-4 border-l-teal-500">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <p class="text-slate-500 text-sm font-medium">Resolution Status</p>
+                                    <h3 class="text-2xl font-bold text-slate-800 mt-1">Optimal</h3>
+                                </div>
+                                <div class="bg-teal-50 p-2 rounded-lg text-teal-600">
+                                    <i data-lucide="check-circle" class="h-6 w-6"></i>
+                                </div>
+                            </div>
+                            <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                <div class="bg-teal-500 h-full w-full"></div>
+                            </div>
+                            <p class="text-xs text-slate-400 mt-2">Last generation: Just now</p>
                         </div>
-                         <div class="card p-6">
-                            <h3 class="font-semibold text-gray-700">Total Conflicts Resolved</h3>
-                            <p class="text-2xl font-bold text-teal-600 mt-2">1,204</p>
-                            <p class="text-sm text-gray-500">by the AI engine</p>
+
+                        <!-- Stat Card 2 -->
+                        <div class="card p-6 border-l-4 border-l-indigo-500">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <p class="text-slate-500 text-sm font-medium">Conflicts Resolved</p>
+                                    <h3 class="text-2xl font-bold text-slate-800 mt-1">1,240</h3>
+                                </div>
+                                <div class="bg-indigo-50 p-2 rounded-lg text-indigo-600">
+                                    <i data-lucide="git-merge" class="h-6 w-6"></i>
+                                </div>
+                            </div>
+                            <p class="text-xs text-green-600 flex items-center mt-3 font-medium">
+                                <i data-lucide="trending-up" class="h-3 w-3 mr-1"></i> +12% Efficiency
+                            </p>
                         </div>
-                         <div class="card p-6">
-                            <h3 class="font-semibold text-gray-700">Resource Utilization</h3>
-                            <p class="text-2xl font-bold text-teal-600 mt-2">92%</p>
-                            <p class="text-sm text-gray-500">Faculty & Rooms</p>
+
+                        <!-- Stat Card 3 -->
+                        <div class="card p-6 border-l-4 border-l-amber-500">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <p class="text-slate-500 text-sm font-medium">Resource Usage</p>
+                                    <h3 class="text-2xl font-bold text-slate-800 mt-1">94%</h3>
+                                </div>
+                                <div class="bg-amber-50 p-2 rounded-lg text-amber-600">
+                                    <i data-lucide="pie-chart" class="h-6 w-6"></i>
+                                </div>
+                            </div>
+                            <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                <div class="bg-amber-500 h-full w-[94%]"></div>
+                            </div>
+                            <p class="text-xs text-slate-400 mt-2">Classrooms & Labs Capacity</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl p-8 text-white relative overflow-hidden shadow-xl">
+                        <div class="relative z-10 flex flex-col md:flex-row items-center justify-between">
+                            <div class="mb-6 md:mb-0">
+                                <h3 class="text-xl font-bold mb-2">Ready to create a new schedule?</h3>
+                                <p class="text-slate-300 text-sm max-w-md">Our Constraint Satisfaction Algorithm checks 50+ parameters to ensure zero clashes.</p>
+                            </div>
+                            <button class="btn bg-white text-slate-900 hover:bg-teal-50" data-page-link="generate">
+                                <i data-lucide="plus-circle" class="mr-2 h-5 w-5"></i> Start New Generator
+                            </button>
+                        </div>
+                        <!-- Decorative circle -->
+                        <div class="absolute -right-10 -bottom-20 w-64 h-64 bg-teal-500 rounded-full opacity-20 blur-3xl"></div>
+                    </div>
+                </div>
+
+                <!-- Generator View -->
+                <div id="generate-page" class="hidden animate-fade-in">
+                    <div class="max-w-5xl mx-auto">
+                        <header class="mb-8 flex flex-col md:flex-row md:items-center justify-between">
+                            <div>
+                                <h1 class="text-2xl md:text-3xl font-bold text-slate-800">Timetable Generator</h1>
+                                <p class="text-slate-500 mt-1">Define constraints and run the AI engine.</p>
+                            </div>
+                        </header>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            <!-- Input Section -->
+                            <div class="lg:col-span-2 space-y-6">
+                                <div class="card p-6">
+                                    <div class="flex items-center justify-between mb-6">
+                                        <h2 class="text-lg font-bold text-slate-700 flex items-center">
+                                            <span class="w-8 h-8 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center mr-3 text-sm">1</span>
+                                            Input Data
+                                        </h2>
+                                        <button class="text-xs text-teal-600 font-medium hover:underline">Bulk Import (CSV)</button>
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        <div class="space-y-1">
+                                            <label class="text-xs font-semibold text-slate-500">Subject Name</label>
+                                            <input id="subject-name" type="text" placeholder="e.g. Data Structures" class="input-field">
+                                        </div>
+                                        <div class="space-y-1">
+                                            <label class="text-xs font-semibold text-slate-500">Faculty Name</label>
+                                            <input id="faculty-name" type="text" placeholder="e.g. Dr. Smith" class="input-field">
+                                        </div>
+                                        <div class="space-y-1">
+                                            <label class="text-xs font-semibold text-slate-500">Hours / Week</label>
+                                            <input id="subject-hours" type="number" placeholder="4" class="input-field">
+                                        </div>
+                                        <div class="space-y-1">
+                                            <label class="text-xs font-semibold text-slate-500">Room Number</label>
+                                            <input id="room-number" type="text" placeholder="e.g. Lab 204" class="input-field">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex justify-end pt-2">
+                                        <button id="add-subject-btn" class="btn btn-secondary text-teal-700 border-teal-200 bg-teal-50 hover:bg-teal-100">
+                                            <i data-lucide="plus" class="mr-2 h-4 w-4"></i> Add Subject
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="card p-6 min-h-[200px]">
+                                    <h3 class="text-sm font-bold text-slate-600 mb-4 uppercase tracking-wider">Subject Queue</h3>
+                                    <ul id="subject-list" class="space-y-3">
+                                        <!-- Empty State -->
+                                        <li id="empty-list-msg" class="text-center py-10 text-slate-400 border-2 border-dashed border-slate-200 rounded-lg">
+                                            <i data-lucide="layers" class="h-10 w-10 mx-auto mb-2 opacity-50"></i>
+                                            <p>No subjects added yet.</p>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- Action Section -->
+                            <div class="lg:col-span-1">
+                                <div class="card p-6 sticky top-6">
+                                    <h2 class="text-lg font-bold text-slate-700 flex items-center mb-6">
+                                        <span class="w-8 h-8 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center mr-3 text-sm">2</span>
+                                        Process
+                                    </h2>
+
+                                    <div id="generate-start" class="text-center py-4">
+                                        <div class="mb-6">
+                                            <div class="bg-slate-50 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4 text-slate-300">
+                                                <i data-lucide="cpu" class="h-10 w-10"></i>
+                                            </div>
+                                            <p class="text-sm text-slate-500">Ready to compute optimal schedule based on current inputs.</p>
+                                        </div>
+                                        <button id="start-generation-btn" class="btn btn-primary w-full shadow-lg shadow-teal-500/20" disabled>
+                                            Generate Timetable
+                                        </button>
+                                        <p id="generation-warning" class="text-xs text-amber-600 mt-3 flex items-center justify-center bg-amber-50 py-2 rounded">
+                                            <i data-lucide="alert-triangle" class="h-3 w-3 mr-1"></i> Add subjects first
+                                        </p>
+                                    </div>
+
+                                    <div id="generate-progress" class="hidden text-center py-8">
+                                        <div class="relative w-20 h-20 mx-auto mb-4">
+                                            <div class="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
+                                            <div class="absolute inset-0 border-4 border-teal-500 rounded-full border-t-transparent animate-spin"></div>
+                                        </div>
+                                        <h3 class="font-bold text-slate-800">Processing...</h3>
+                                        <p class="text-xs text-slate-500 mt-2">Checking faculty availability<br>Resolving room conflicts</p>
+                                    </div>
+
+                                    <div id="generate-complete" class="hidden text-center py-6">
+                                        <div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+                                            <i data-lucide="check" class="h-8 w-8"></i>
+                                        </div>
+                                        <h3 class="text-lg font-bold text-slate-800">Success!</h3>
+                                        <p class="text-xs text-slate-500 mb-6">Timetable generated with 0 conflicts.</p>
+                                        <button class="btn btn-primary w-full" data-page-link="view">
+                                            View Results <i data-lucide="arrow-right" class="ml-2 h-4 w-4"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div id="generate-page" class="hidden">
-                    <h1 class="text-3xl font-bold mb-4">Generate New Timetable</h1>
-                    <div class="space-y-6">
-                        <div class="card p-6">
-                            <h2 class="text-lg font-semibold mb-2">1. Add Subjects, Faculty, and Rooms</h2>
-                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                                <input id="subject-name" type="text" placeholder="Subject Name" class="border p-2 rounded-md w-full">
-                                <input id="faculty-name" type="text" placeholder="Faculty Name" class="border p-2 rounded-md w-full">
-                                <input id="subject-hours" type="number" placeholder="Hours/Week" class="border p-2 rounded-md w-full">
-                                <input id="room-number" type="text" placeholder="Room No." class="border p-2 rounded-md w-full">
-                            </div>
-                            <button id="add-subject-btn" class="btn btn-primary">Add Subject</button>
-                            <div class="mt-6">
-                                <h3 class="font-semibold">Subject List:</h3>
-                                <ul id="subject-list" class="space-y-2 mt-2"></ul>
-                            </div>
+
+                <!-- View Timetable Page -->
+                <div id="view-page" class="hidden animate-fade-in">
+                    
+                    <!-- Admin Tools (Conditional) -->
+                    <div id="admin-tools-panel" class="hidden mb-6 bg-slate-800 rounded-xl p-5 text-white shadow-lg">
+                        <div class="flex items-center mb-4">
+                            <i data-lucide="terminal" class="h-5 w-5 mr-2 text-teal-400"></i>
+                            <h3 class="font-bold text-sm uppercase tracking-wide">Admin Control Panel</h3>
                         </div>
-                        <div class="card p-6 text-center">
-                            <h2 class="text-lg font-semibold mb-2">2. Generate Schedule</h2>
-                            <div id="generate-start">
-                                <button id="start-generation-btn" class="btn btn-primary w-full md:w-auto" disabled>
-                                    <i data-lucide="play" class="mr-2 h-5 w-5"></i>Generate Timetable
-                                </button>
-                                <p id="generation-warning" class="text-xs text-red-500 mt-2">Please add at least one subject.</p>
-                            </div>
-                            <div id="generate-progress" class="hidden w-full max-w-sm mx-auto">
-                                <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-teal-600 mx-auto"></div>
-                                <p id="progress-text" class="text-gray-500 mt-2">Initializing constraints...</p>
-                            </div>
-                            <div id="generate-complete" class="hidden">
-                                <i data-lucide="check-circle-2" class="h-12 w-12 text-green-500 mx-auto"></i>
-                                <h3 class="text-xl font-semibold mt-2">Generation Complete!</h3>
-                                <p class="text-gray-500">An optimized, conflict-free timetable has been generated.</p>
-                                <button class="btn btn-primary mt-4" data-page-link="view">
-                                    <i data-lucide="eye" class="mr-2 h-5 w-5"></i>View Timetable
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div id="view-page" class="hidden">
-                    <div id="admin-tools-panel" class="hidden card p-4 mb-6">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div id="admin-view-filter">
-                                <h3 class="font-semibold mb-2 text-gray-700">Filter Timetable View</h3>
-                                <div class="flex items-center space-x-4">
-                                   <select id="faculty-filter" class="border p-2 rounded-md w-full"><option value="">-- View by Faculty --</option></select>
-                                   <button id="reset-view-btn" class="btn bg-gray-200 text-gray-700">Master View</button>
+                            <div class="bg-slate-700/50 p-3 rounded-lg border border-slate-600">
+                                <label class="text-xs text-slate-400 block mb-2">Filter View</label>
+                                <div class="flex space-x-2">
+                                    <select id="faculty-filter" class="bg-slate-900 border border-slate-600 text-sm rounded px-3 py-2 w-full text-slate-200 outline-none focus:border-teal-500">
+                                        <option value="">All Faculty</option>
+                                    </select>
+                                    <button id="reset-view-btn" class="btn bg-slate-600 hover:bg-slate-500 text-white px-3 py-2 text-xs">Reset</button>
                                 </div>
                             </div>
-                            <div id="admin-impersonation">
-                                <h3 class="font-semibold mb-2 text-gray-700">Impersonate Role</h3>
-                                <div class="flex items-center space-x-4">
-                                    <button id="view-as-teacher-btn" class="btn bg-blue-100 text-blue-700 w-full">View as Teacher</button>
-                                    <button id="view-as-student-btn" class="btn bg-blue-100 text-blue-700 w-full">View as Student</button>
+                            <div class="bg-slate-700/50 p-3 rounded-lg border border-slate-600">
+                                <label class="text-xs text-slate-400 block mb-2">Impersonate View</label>
+                                <div class="flex space-x-2">
+                                    <button id="view-as-teacher-btn" class="flex-1 btn bg-teal-900/50 hover:bg-teal-900 text-teal-100 border border-teal-800 py-2 text-xs">
+                                        As Teacher
+                                    </button>
+                                    <button id="view-as-student-btn" class="flex-1 btn bg-indigo-900/50 hover:bg-indigo-900 text-indigo-100 border border-indigo-800 py-2 text-xs">
+                                        As Student
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="flex justify-between items-center mb-6"><div><h1 id="timetable-title" class="text-3xl font-bold">Generated Timetable</h1><p class="text-gray-600">FYUP - B.Ed. Semester 1 (2025-26)</p></div><button class="btn btn-primary"><i data-lucide="download" class="mr-2 h-5 w-5"></i>Export (PDF/Excel)</button></div>
-                    <div id="timetable-output" class="card p-6 overflow-x-auto"></div>
+
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+                        <div>
+                            <h1 id="timetable-title" class="text-2xl md:text-3xl font-bold text-slate-800">Master Timetable</h1>
+                            <p class="text-slate-500 text-sm mt-1 flex items-center">
+                                <span class="bg-green-100 text-green-700 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase mr-2">Live</span>
+                                FYUP - B.Tech Semester 3 (2025-26)
+                            </p>
+                        </div>
+                        <div class="mt-4 md:mt-0 flex space-x-2">
+                            <button class="btn btn-secondary text-xs">
+                                <i data-lucide="printer" class="mr-2 h-4 w-4"></i> Print
+                            </button>
+                            <button class="btn btn-primary text-xs">
+                                <i data-lucide="download" class="mr-2 h-4 w-4"></i> Export PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Timetable Output -->
+                    <div class="card overflow-hidden">
+                        <div class="overflow-x-auto pb-4">
+                            <div id="timetable-output" class="min-w-[1000px] p-6">
+                                <!-- Grid will be injected here -->
+                                <div class="flex flex-col items-center justify-center py-20 text-slate-400">
+                                    <div class="bg-slate-50 p-4 rounded-full mb-4">
+                                        <i data-lucide="calendar-x" class="h-8 w-8"></i>
+                                    </div>
+                                    <p class="font-medium">No timetable generated yet.</p>
+                                    <button class="btn btn-secondary mt-4 text-sm" onclick="document.querySelector('[data-page=generate]').click()">Go to Generator</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
             </main>
         </div>
     </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const app = {
@@ -248,6 +545,22 @@
                 impersonatingRole: null,
                 subjects: [],
                 generatedTimetable: null,
+                // Color palette for subjects
+                colors: [
+                    'bg-red-50 text-red-700 border-red-100',
+                    'bg-orange-50 text-orange-700 border-orange-100',
+                    'bg-amber-50 text-amber-700 border-amber-100',
+                    'bg-green-50 text-green-700 border-green-100',
+                    'bg-teal-50 text-teal-700 border-teal-100',
+                    'bg-cyan-50 text-cyan-700 border-cyan-100',
+                    'bg-blue-50 text-blue-700 border-blue-100',
+                    'bg-indigo-50 text-indigo-700 border-indigo-100',
+                    'bg-violet-50 text-violet-700 border-violet-100',
+                    'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-100',
+                    'bg-pink-50 text-pink-700 border-pink-100',
+                    'bg-rose-50 text-rose-700 border-rose-100'
+                ],
+                subjectColorMap: {},
 
                 init() {
                     lucide.createIcons();
@@ -258,12 +571,38 @@
                     this.setupImpersonation();
                 },
 
+                getSubjectColor(subjectName) {
+                    if (!this.subjectColorMap[subjectName]) {
+                        // Simple hash function to assign stable color
+                        let hash = 0;
+                        for (let i = 0; i < subjectName.length; i++) {
+                            hash = subjectName.charCodeAt(i) + ((hash << 5) - hash);
+                        }
+                        const index = Math.abs(hash) % this.colors.length;
+                        this.subjectColorMap[subjectName] = this.colors[index];
+                    }
+                    return this.subjectColorMap[subjectName];
+                },
+
                 showPage(pageId) {
-                    document.querySelectorAll('main > div').forEach(page => page.classList.add('hidden'));
-                    const pageToShow = document.getElementById(`${pageId}-page`);
-                    if (pageToShow) pageToShow.classList.remove('hidden');
+                    const pages = ['dashboard', 'generate', 'view'];
+                    pages.forEach(id => {
+                        const el = document.getElementById(`${id}-page`);
+                        if(id === pageId) {
+                            el.classList.remove('hidden');
+                            el.classList.add('animate-fade-in');
+                        } else {
+                            el.classList.add('hidden');
+                            el.classList.remove('animate-fade-in');
+                        }
+                    });
+
                     document.querySelectorAll('.nav-item').forEach(item => {
-                        item.classList.toggle('active', item.dataset.page === pageId);
+                        if (item.dataset.page === pageId) {
+                            item.classList.add('active', 'bg-teal-50', 'text-teal-700');
+                        } else {
+                            item.classList.remove('active', 'bg-teal-50', 'text-teal-700');
+                        }
                     });
                 },
 
@@ -272,29 +611,27 @@
                     const mainAppContainer = document.getElementById('app');
                     const loginForm = document.getElementById('login-form');
                     const logoutBtn = document.getElementById('logout-btn');
-                    const loginError = document.getElementById('login-error');
-                    const roleSelectionView = document.getElementById('role-selection-view');
-                    const loginFormView = document.getElementById('login-form-view');
                     const roleButtons = document.querySelectorAll('.role-btn');
                     const backToRoleBtn = document.getElementById('back-to-role-btn');
-                    const loginTitle = document.getElementById('login-title');
-
+                    
                     roleButtons.forEach(button => {
                         button.addEventListener('click', () => {
-                            const role = button.dataset.role;
-                            this.selectedRole = role;
-                            roleSelectionView.classList.add('hidden');
-                            loginFormView.classList.remove('hidden');
-                            loginTitle.textContent = `${role} Login`;
-                            document.getElementById('email').value = `${role.toLowerCase()}@college.edu`;
+                            this.selectedRole = button.dataset.role;
+                            document.getElementById('role-selection-view').classList.add('hidden');
+                            const formView = document.getElementById('login-form-view');
+                            formView.classList.remove('hidden');
+                            formView.classList.add('animate-fade-in');
+                            document.getElementById('login-title').textContent = `${this.selectedRole} Login`;
+                            document.getElementById('email').value = `${this.selectedRole.toLowerCase()}@college.edu`;
                         });
                     });
 
                     backToRoleBtn.addEventListener('click', () => {
-                        loginFormView.classList.add('hidden');
-                        roleSelectionView.classList.remove('hidden');
-                        this.selectedRole = null;
-                        loginError.classList.add('hidden');
+                        document.getElementById('login-form-view').classList.add('hidden');
+                        const roleView = document.getElementById('role-selection-view');
+                        roleView.classList.remove('hidden');
+                        roleView.classList.add('animate-fade-in');
+                        document.getElementById('login-error').classList.add('hidden');
                     });
 
                     loginForm.addEventListener('submit', (e) => {
@@ -302,14 +639,18 @@
                         const email = document.getElementById('email').value;
                         const password = document.getElementById('password').value;
                         const expectedEmail = `${this.selectedRole.toLowerCase()}@college.edu`;
+                        
                         if (email === expectedEmail && password === 'password') {
                             this.currentUser = { email, role: this.selectedRole };
                             loginContainer.classList.add('hidden');
                             mainAppContainer.classList.remove('hidden');
-                            loginError.classList.add('hidden');
+                            mainAppContainer.classList.add('animate-fade-in');
                             this.updateUIAfterLogin();
                         } else {
-                            loginError.classList.remove('hidden');
+                            const error = document.getElementById('login-error');
+                            error.classList.remove('hidden');
+                            error.classList.add('animate-bounce');
+                            setTimeout(() => error.classList.remove('animate-bounce'), 1000);
                         }
                     });
 
@@ -318,12 +659,12 @@
                         this.selectedRole = null;
                         this.impersonatingRole = null;
                         this.subjects = [];
-                        this.generatedTimetable = null;
+                        this.subjectColorMap = {};
                         this.renderSubjectList();
                         mainAppContainer.classList.add('hidden');
                         loginContainer.classList.remove('hidden');
-                        loginFormView.classList.add('hidden');
-                        roleSelectionView.classList.remove('hidden');
+                        document.getElementById('login-form-view').classList.add('hidden');
+                        document.getElementById('role-selection-view').classList.remove('hidden');
                     });
                 },
 
@@ -332,23 +673,31 @@
                     const displayRole = this.impersonatingRole || this.currentUser.role;
                     
                     document.getElementById('user-email').textContent = this.currentUser.email;
-                    document.getElementById('user-role').textContent = this.impersonatingRole ? `${this.currentUser.role} (Viewing as ${this.impersonatingRole})` : this.currentUser.role;
+                    document.getElementById('user-role').textContent = this.impersonatingRole ? `${this.currentUser.role} as ${this.impersonatingRole}` : this.currentUser.role;
                     
                     const navItems = {
                         dashboard: document.querySelector('[data-page="dashboard"]'),
                         generate: document.querySelector('[data-page="generate"]'),
                         view: document.querySelector('[data-page="view"]'),
                     };
-                    Object.values(navItems).forEach(item => item.style.display = 'none');
                     
-                    document.getElementById('admin-tools-panel').classList.toggle('hidden', this.currentUser.role !== 'Admin' || this.impersonatingRole !== null);
-                    document.getElementById('return-to-admin-container').classList.toggle('hidden', !this.impersonatingRole);
+                    // Reset visibility
+                    Object.values(navItems).forEach(item => item.style.display = 'none');
+                    document.getElementById('admin-tools-panel').classList.add('hidden');
+                    document.getElementById('return-to-admin-container').classList.add('hidden');
+
+                    if (this.currentUser.role === 'Admin') {
+                         document.getElementById('admin-tools-panel').classList.remove('hidden');
+                         if(this.impersonatingRole) {
+                             document.getElementById('return-to-admin-container').classList.remove('hidden');
+                             document.getElementById('admin-tools-panel').classList.add('hidden'); // Hide admin tools when impersonating
+                         }
+                    }
 
                     switch (displayRole) {
                         case 'Admin':
                             Object.values(navItems).forEach(item => item.style.display = 'flex');
-                            if (!this.impersonatingRole) this.showPage('dashboard');
-                            else this.showPage('view');
+                            this.showPage('dashboard');
                             break;
                         case 'Teacher':
                             navItems.view.style.display = 'flex';
@@ -357,7 +706,7 @@
                             break;
                         case 'Student':
                             navItems.view.style.display = 'flex';
-                            this.displayTimetable(this.generatedTimetable, null); // Students see the master timetable in this simplified version
+                            this.displayTimetable(this.generatedTimetable, null);
                             this.showPage('view');
                             break;
                     }
@@ -365,7 +714,10 @@
 
                 setupNavigation() {
                     document.querySelectorAll('.nav-item, [data-page-link]').forEach(link => {
-                        link.addEventListener('click', () => this.showPage(link.dataset.page || link.dataset.pageLink));
+                        link.addEventListener('click', () => {
+                            const page = link.dataset.page || link.dataset.pageLink;
+                            this.showPage(page);
+                        });
                     });
                 },
 
@@ -380,22 +732,49 @@
                     const hours = parseInt(document.getElementById('subject-hours').value, 10);
                     const room = document.getElementById('room-number').value.trim();
 
-                    if (!name || !faculty || !hours || !room) { alert('Please fill in all fields.'); return; }
+                    if (!name || !faculty || !hours || !room) { return; } // Add validation UI later
                     if (this.subjects.some(sub => sub.name.toLowerCase() === name.toLowerCase())) { alert('Subject already added!'); return; }
+                    
                     this.subjects.push({ name, faculty, hours, room });
                     this.renderSubjectList();
                     ['subject-name', 'faculty-name', 'subject-hours', 'room-number'].forEach(id => document.getElementById(id).value = '');
+                    document.getElementById('subject-name').focus();
                 },
 
                 renderSubjectList() {
                     const list = document.getElementById('subject-list');
-                    list.innerHTML = '';
-                    this.subjects.forEach((sub, index) => {
-                        const li = document.createElement('li');
-                        li.className = "p-2 border rounded-md flex justify-between items-center";
-                        li.innerHTML = `<span>${sub.name} (${sub.faculty}) - ${sub.hours} hrs - Room ${sub.room}</span><button data-index="${index}" class="remove-subject-btn text-red-500 hover:text-red-700"><i data-lucide="trash-2" class="h-4 w-4"></i></button>`;
-                        list.appendChild(li);
-                    });
+                    const emptyMsg = document.getElementById('empty-list-msg');
+                    
+                    if (this.subjects.length === 0) {
+                        list.innerHTML = '';
+                        list.appendChild(emptyMsg);
+                        emptyMsg.classList.remove('hidden');
+                    } else {
+                        emptyMsg.classList.add('hidden');
+                        list.innerHTML = ''; // Clear existing items except empty msg if needed, but here re-render all
+                        this.subjects.forEach((sub, index) => {
+                            const li = document.createElement('li');
+                            li.className = "subject-pill p-3 bg-white border border-slate-200 rounded-lg flex justify-between items-center shadow-sm";
+                            const colorClass = this.getSubjectColor(sub.name);
+                            // Extract border color for the left indicator
+                            const borderColor = colorClass.split(' ').find(c => c.startsWith('border-')).replace('border-', 'bg-');
+                            
+                            li.innerHTML = `
+                                <div class="flex items-center">
+                                    <div class="w-2 h-8 rounded-full ${borderColor} mr-3"></div>
+                                    <div>
+                                        <p class="font-bold text-sm text-slate-700">${sub.name}</p>
+                                        <p class="text-xs text-slate-500">${sub.faculty} • ${sub.hours}h/wk • ${sub.room}</p>
+                                    </div>
+                                </div>
+                                <button data-index="${index}" class="remove-subject-btn text-slate-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors">
+                                    <i data-lucide="trash-2" class="h-4 w-4"></i>
+                                </button>
+                            `;
+                            list.appendChild(li);
+                        });
+                    }
+                    
                     lucide.createIcons();
                     document.querySelectorAll('.remove-subject-btn').forEach(btn => btn.addEventListener('click', (e) => this.removeSubject(e.currentTarget.dataset.index)));
                     this.checkGenerationReadiness();
@@ -408,25 +787,38 @@
 
                 checkGenerationReadiness() {
                     const ready = this.subjects.length > 0;
-                    document.getElementById('start-generation-btn').disabled = !ready;
-                    document.getElementById('generation-warning').classList.toggle('hidden', ready);
+                    const btn = document.getElementById('start-generation-btn');
+                    const warning = document.getElementById('generation-warning');
+                    
+                    btn.disabled = !ready;
+                    if(ready) {
+                        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        warning.classList.add('hidden');
+                    } else {
+                        btn.classList.add('opacity-50', 'cursor-not-allowed');
+                        warning.classList.remove('hidden');
+                    }
                 },
 
                 startGeneration() {
                     document.getElementById('generate-start').classList.add('hidden');
                     document.getElementById('generate-progress').classList.remove('hidden');
-                    document.getElementById('generate-complete').classList.add('hidden');
+                    document.getElementById('generate-progress').classList.add('animate-fade-in');
+                    
                     setTimeout(() => {
                         this.runGeneratorAlgorithm();
                         document.getElementById('generate-progress').classList.add('hidden');
                         document.getElementById('generate-complete').classList.remove('hidden');
-                    }, 1500);
+                        document.getElementById('generate-complete').classList.add('animate-fade-in');
+                    }, 2000);
                 },
 
                 runGeneratorAlgorithm() {
                     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-                    const slots = ['9-10 AM', '10-11 AM', '11-12 PM', '1-2 PM', '2-3 PM', "3-4 PM"];
-                    let timetable = {}; days.forEach(day => { timetable[day] = {}; slots.forEach(slot => timetable[day][slot] = null); });
+                    const slots = ['9:00', '10:00', '11:00', '1:00', '2:00', '3:00'];
+                    let timetable = {}; 
+                    days.forEach(day => { timetable[day] = {}; slots.forEach(slot => timetable[day][slot] = null); });
+                    
                     let facultySchedule = {}; let roomSchedule = {};
                     const classesToSchedule = [];
                     this.subjects.forEach(sub => {
@@ -435,11 +827,13 @@
                         if (!roomSchedule[sub.room]) roomSchedule[sub.room] = {};
                     });
                     
+                    // Heuristic: Sort by most constrained (placeholder logic)
                     classesToSchedule.sort(() => 0.5 - Math.random());
 
                     for (const classToPlace of classesToSchedule) {
                         let placed = false;
-                        for (const day of days) { for (const slot of slots) {
+                        for (const day of days) { 
+                            for (const slot of slots) {
                                 const slotKey = `${day}-${slot}`;
                                 if (!timetable[day][slot] && !facultySchedule[classToPlace.faculty][slotKey] && !roomSchedule[classToPlace.room][slotKey]) {
                                     timetable[day][slot] = classToPlace;
@@ -447,57 +841,74 @@
                                     roomSchedule[classToPlace.room][slotKey] = true;
                                     placed = true; break;
                                 }
-                            } if (placed) break;
+                            } 
+                            if (placed) break;
                         }
                     }
                     this.generatedTimetable = timetable;
                     this.populateFilters();
-                    this.displayTimetable(timetable);
                 },
 
                 displayTimetable(timetable, filter = null) {
-                    if (!timetable) {
-                        document.getElementById('timetable-output').innerHTML = `<p class="text-center text-gray-500">No timetable has been generated yet.</p>`;
-                        return;
-                    }
-
                     const output = document.getElementById('timetable-output');
+                    if (!timetable) return;
+
                     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-                    const slotHeadersWithLunch = ['9-10 AM', '10-11 AM', '11-12 PM', '12-1 PM', '1-2 PM', '2-3 PM', "3-4 PM"];
+                    const slots = ['9:00', '10:00', '11:00', '1:00', '2:00', '3:00'];
+                    
                     output.innerHTML = '';
-                    let header = `<div class="grid grid-cols-8 gap-2 text-center font-semibold mb-2"><div></div>`;
-                    slotHeadersWithLunch.forEach(slot => header += `<div>${slot}</div>`);
-                    header += '</div>';
-                    output.innerHTML += header;
+                    
+                    // Header
+                    let headerHtml = `<div class="grid grid-cols-7 gap-3 mb-4 sticky top-0 bg-white z-10 pb-2 border-b border-slate-100">
+                        <div class="font-bold text-slate-400 text-xs uppercase tracking-wider py-2">Day / Time</div>`;
+                    
+                    slots.forEach(slot => {
+                        headerHtml += `<div class="text-center font-bold text-slate-600 text-sm py-2 bg-slate-50 rounded-lg">${slot}</div>`;
+                    });
+                    headerHtml += '</div>';
+                    output.innerHTML = headerHtml;
 
+                    // Rows
                     days.forEach(day => {
-                        let row = `<div class="grid grid-cols-8 gap-2 mt-2"><div class="font-semibold my-auto">${day}</div>`;
-                        slotHeadersWithLunch.forEach(slot => {
-                            if (slot === '12-1 PM') { 
-                                row += `<div class="bg-gray-100 p-2 rounded-md flex items-center justify-center text-gray-400">LUNCH</div>`;
-                            } else {
-                                const cellData = timetable[day][slot];
-                                let isVisible = !filter;
-                                if(filter && cellData) {
-                                    if(filter.type === 'faculty' && cellData.faculty === filter.name) isVisible = true;
-                                }
+                        let row = `<div class="grid grid-cols-7 gap-3 mb-3 items-stretch">
+                            <div class="font-bold text-slate-700 text-sm flex items-center bg-slate-50 rounded-lg pl-3 border-l-4 border-slate-200">${day}</div>`;
+                        
+                        slots.forEach(slot => {
+                            const cellData = timetable[day][slot];
+                            let isVisible = !filter;
+                            
+                            // Mock filter logic
+                            if(filter && cellData) {
+                                if(filter.type === 'faculty' && cellData.faculty === filter.name) isVisible = true;
+                                else isVisible = false;
+                            } else if (filter && !cellData) {
+                                isVisible = false; // Don't show empty slots when filtering heavily
+                            }
 
-                                if (cellData && isVisible) {
-                                    const { name, faculty, room } = cellData;
-                                    row += `<div class="timetable-slot">${name}<br><small>${faculty} (${room})</small></div>`;
-                                } else {
-                                    row += `<div class="timetable-slot bg-gray-50 border-gray-200 ${filter ? 'faded' : ''}"></div>`;
-                                }
+                            if (cellData && isVisible) {
+                                const { name, faculty, room } = cellData;
+                                const colorClass = this.getSubjectColor(name);
+                                row += `
+                                    <div class="timetable-slot ${colorClass} border-l-4 shadow-sm cursor-pointer hover:shadow-md">
+                                        <div class="font-bold text-xs truncate w-full" title="${name}">${name}</div>
+                                        <div class="text-[10px] mt-1 opacity-90 truncate"><i data-lucide="user" class="inline h-3 w-3"></i> ${faculty}</div>
+                                        <div class="text-[10px] opacity-80 truncate"><i data-lucide="map-pin" class="inline h-3 w-3"></i> ${room}</div>
+                                    </div>`;
+                            } else {
+                                row += `<div class="timetable-slot bg-slate-50 border border-slate-100 border-dashed text-slate-300 flex items-center justify-center">
+                                            <span class="text-xs">-</span>
+                                        </div>`;
                             }
                         });
                         row += '</div>';
                         output.innerHTML += row;
                     });
+                    lucide.createIcons();
                 },
 
                 populateFilters() {
                     const facultyFilter = document.getElementById('faculty-filter');
-                    facultyFilter.innerHTML = '<option value="">-- View by Faculty --</option>';
+                    facultyFilter.innerHTML = '<option value="">All Faculty</option>';
                     const uniqueFaculty = [...new Set(this.subjects.map(s => s.faculty))];
                     uniqueFaculty.forEach(f => facultyFilter.innerHTML += `<option value="${f}">${f}</option>`);
                 },
@@ -508,13 +919,13 @@
 
                     facultyFilter.addEventListener('change', () => {
                         const name = facultyFilter.value;
-                        document.getElementById('timetable-title').textContent = name ? `${name}'s Timetable` : 'Master Timetable';
+                        document.getElementById('timetable-title').textContent = name ? `${name}'s Schedule` : 'Master Timetable';
                         this.displayTimetable(this.generatedTimetable, name ? { type: 'faculty', name } : null);
                     });
                     
                     resetBtn.addEventListener('click', () => {
                         facultyFilter.value = "";
-                        document.getElementById('timetable-title').textContent = 'Generated Timetable';
+                        document.getElementById('timetable-title').textContent = 'Master Timetable';
                         this.displayTimetable(this.generatedTimetable, null);
                     });
                 },
@@ -531,7 +942,6 @@
                      document.getElementById('return-to-admin-btn').addEventListener('click', () => {
                         this.impersonatingRole = null;
                         this.updateUIAfterLogin();
-                        this.showPage('view');
                     });
                 }
             };
@@ -540,7 +950,3 @@
     </script>
 </body>
 </html>
-
-
-
-
